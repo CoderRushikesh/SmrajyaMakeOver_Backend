@@ -1,5 +1,7 @@
 package com.Samrajya.MakeOver.Config;
 
+
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -11,6 +13,13 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    private final JwtAuthFilter jwtAuthFilter;
+
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+        this.jwtAuthFilter = jwtAuthFilter;
+    }
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -21,7 +30,11 @@ public class SecurityConfig {
         http.csrf().disable()
             .authorizeHttpRequests()
             .requestMatchers("/auth/**").permitAll()
-            .anyRequest().authenticated();
+            .anyRequest().authenticated()
+            .and()
+            .addFilterBefore(jwtAuthFilter,
+                    org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 }

@@ -3,6 +3,7 @@ package com.Samrajya.MakeOver.Service;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -12,11 +13,18 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-	private static final String SECRET = "mySuperSecretKeyThatIsAtLeast32BytesLong!!";
+	private final String secret;
+
+    public JwtService(@Value("${jwt.secret}") String secret) {
+        if (secret.getBytes(StandardCharsets.UTF_8).length < 32) {
+            throw new IllegalStateException("jwt.secret must be at least 32 bytes");
+        }
+        this.secret = secret;
+    }
 
 
     private Key getSigningKey() {
-        return Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
 

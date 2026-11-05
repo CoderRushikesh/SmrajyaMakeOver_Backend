@@ -1,5 +1,6 @@
 package com.Samrajya.MakeOver.Controller;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,15 +27,21 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User user) {
         try {
+            if (user.getEmail() == null || user.getPassword() == null) {
+                return ResponseEntity.badRequest().body("Email and password are required");
+            }
+            // SECURITY: never trust role/id/createdAt sent by the client
+            user.setId(null);
+            user.setRole("USER");
+            user.setCreatedAt(null);
             user.setPassword(encoder.encode(user.getPassword()));
             repo.save(user);
             return ResponseEntity.ok("User registered!");
         } catch (Exception e) {
-            e.printStackTrace(); // log error in console
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Registration failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Registration failed (email may already exist)");
         }
     }
-
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequestDTO request) {
@@ -43,14 +50,17 @@ public class AuthController {
                               .orElseThrow(() -> new RuntimeException("User not found"));
 
             if (encoder.matches(request.getPassword(), dbUser.getPassword())) {
-                String token = jwtService.generateToken(dbUser.getEmail());
-                return ResponseEntity.ok(Map.of("token", token));
+                String role = dbUser.getRole() == null ? "USER" : dbUser.getRole();
+                String token = jwtService.generateToken(dbUser.getEmail(), role);
+                Map<String, Object> body = new LinkedHashMap<>();
+                body.put("token", token);
+                body.put("role", role);
+                body.put("name", dbUser.getName());
+                return ResponseEntity.ok(body);
             }
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Login failed: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
         }
     }
-
-
 }

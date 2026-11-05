@@ -5,7 +5,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+
 import lombok.Data;
 
 @Data
@@ -24,5 +28,17 @@ public class User {
 	 private String mobile;
 	 private String address;
 	 private String city;
+
+	 // USER or ADMIN (null on old rows = USER)
+	 @Column(length = 20)
+	 private String role;
+
+	 private LocalDateTime createdAt;
+
+	 @PrePersist
+	 void onCreate() {
+		 if (createdAt == null) createdAt = LocalDateTime.now(ZoneOffset.UTC);
+		 if (role == null) role = "USER";
+	 }
 	
 }
